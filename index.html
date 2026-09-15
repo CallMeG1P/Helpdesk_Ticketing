@@ -187,27 +187,40 @@
   }
 
   // Fungsi Khusus Admin: Buat Akun Baru
-function tambahUser() {
+function tambahUser(event) {
   const u = document.getElementById("newUsername").value.trim();
   const p = document.getElementById("newPassword").value.trim();
   const r = document.getElementById("newRole").value;
 
   if (!u || !p) return alert("Isi username dan password baru!");
 
+  // Indikator Loading
+  const btn = event.target;
+  const originalText = btn.innerText;
+  btn.innerText = "⏳ Memproses...";
+  btn.disabled = true;
+
   fetch(SCRIPT_URL, {
     method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" }, // Wajib ada untuk Apps Script
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify({ action: "addUser", username: u, password: p, role: r })
   })
   .then(res => res.json())
   .then(res => {
     alert(res.message);
-    document.getElementById("newUsername").value = "";
-    document.getElementById("newPassword").value = "";
+    if (res.status === "success") {
+      document.getElementById("newUsername").value = "";
+      document.getElementById("newPassword").value = "";
+    }
   })
   .catch(err => {
     console.error(err);
-    alert("Gagal membuat akun!");
+    alert("Gagal membuat akun! Cek SCRIPT_URL atau koneksi.");
+  })
+  .finally(() => {
+    // Kembalikan tombol ke semula
+    btn.innerText = originalText;
+    btn.disabled = false;
   });
 }
 
