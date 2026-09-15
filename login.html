@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - System Support</title>
+  <title>Login - Support Ticketing</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
     .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
@@ -23,13 +23,14 @@
 </div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzqtt0uu_C0O8gYWiyw8skm9Db9QcC0thSfa4DQPxG8CZ_WpKAxdthPIfSycFLx-P39/exec";
+  // PASTE URL BARU HASIL DEPLOY DI BAWAH INI
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz0yojzlninVTRRhh3D-Gl-Eo_RZW0EWpqsbymbSOXqJO_2fBeJeKmIaU6PzT5urzHcug/exec";
 
   if (localStorage.getItem("isLoggedIn") === "true") {
     window.location.href = "index.html";
   }
 
-function prosesLogin() {
+  function prosesLogin() {
     const user = document.getElementById("username").value;
     const pass = document.getElementById("password").value;
     const btn = document.getElementById("btnLogin");
@@ -39,13 +40,14 @@ function prosesLogin() {
     btn.innerText = "⏳ Verifikasi...";
     btn.disabled = true;
 
+    // Menggunakan text/plain agar tidak terkena hambatan Preflight CORS Google Apps Script
     fetch(SCRIPT_URL, {
       method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ action: "login", username: user, password: pass })
     })
     .then(res => res.json())
     .then(res => {
-      console.log("Respon Server:", res); // Memunculkan respon di Console
       if (res.status === "success") {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("currentUser", res.username);
@@ -56,8 +58,8 @@ function prosesLogin() {
       }
     })
     .catch(err => {
-      console.error("Error Fetch:", err);
-      alert("Gagal koneksi ke Apps Script! Cek SCRIPT_URL atau izin akses Apps Script.");
+      console.error(err);
+      alert("Terjadi kesalahan sistem / masalah koneksi!");
     })
     .finally(() => {
       btn.innerText = "Login";
