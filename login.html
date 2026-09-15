@@ -29,7 +29,7 @@
     window.location.href = "index.html";
   }
 
-  function prosesLogin() {
+function prosesLogin() {
     const user = document.getElementById("username").value;
     const pass = document.getElementById("password").value;
     const btn = document.getElementById("btnLogin");
@@ -45,16 +45,20 @@
     })
     .then(res => res.json())
     .then(res => {
+      console.log("Respon Server:", res); // Memunculkan respon di Console
       if (res.status === "success") {
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("currentUser", res.username);
-        localStorage.setItem("userRole", res.role); // 'admin' atau 'user'
+        localStorage.setItem("userRole", res.role);
         window.location.href = "index.html";
       } else {
-        alert(res.message);
+        alert("Gagal Login: " + res.message);
       }
     })
-    .catch(err => alert("Gagal koneksi ke server!"))
+    .catch(err => {
+      console.error("Error Fetch:", err);
+      alert("Gagal koneksi ke Apps Script! Cek SCRIPT_URL atau izin akses Apps Script.");
+    })
     .finally(() => {
       btn.innerText = "Login";
       btn.disabled = false;
