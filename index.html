@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard Support Ticketing</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f9; }
+    .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px; }
+    input, select, textarea, button { width: 100%; padding: 8px; box-sizing: border-box; }
+    textarea { grid-column: span 2; height: 60px; }
+    .btn-simpan { background: #28a745; color: white; border: none; border-radius: 4px; padding: 10px; cursor: pointer; font-weight: bold; }
+    .btn-logout { background: #dc3545; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; width: auto; }
+    .table-container { overflow-x: auto; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; white-space: nowrap; }
+    th { background: #e9ecef; }
+    .admin-only { display: none; background: #eef6ff; border: 1px dashed #0070f3; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-bar">
+    <h2>Helpdesk Support Ticket</h2>
+    <div>
+      <span id="userInfo" style="margin-right: 15px; font-weight: bold;"></span>
+      <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- PANEL KHUSUS ADMIN (Buat Akun) -->
+  <div id="panelAdmin" class="admin-only">
+    <h3>⚙️ Menu Admin: Buat Akun Petugas Baru</h3>
+    <div style="display: flex; gap: 10px;">
+      <input type="text" id="newUsername" placeholder="Username Baru">
+      <input type="password" id="newPassword" placeholder="Password Baru">
+      <select id="newRole" style="width: 150px;">
+        <option value="user">User biasa</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button style="background: #0070f3; color: white; border: none; border-radius: 4px; cursor: pointer;" onclick="tambahUser()">Buat Akun</button>
+    </div>
+  </div>
+
+  <!-- FORM TIKET (Admin & User) -->
+  <h3>Form Input / Edit Tiket</h3>
+  <input type="hidden" id="ID_Tiket">
+  <div class="grid">
+    <select id="Status">
+      <option>Open</option><option>In Progress</option><option>Resolved</option><option>Closed</option>
+    </select>
+    <select id="Prioritas">
+      <option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option>
+    </select>
+    <input type="date" id="Tgl_Kendala">
+    <input type="time" id="Jam_Kendala">
+    <input type="text" id="Client" placeholder="Client">
+    <input type="text" id="Provider" placeholder="Provider">
+    <input type="text" id="Vendor" placeholder="Vendor">
+    <input type="text" id="Fitur" placeholder="Fitur">
+    <input type="text" id="PIC_OPEN" placeholder="PIC - OPEN">
+    <input type="text" id="PIC_CLOSE" placeholder="PIC - CLOSE">
+    <textarea id="Permasalahan" placeholder="Permasalahan"></textarea>
+    <textarea id="Troubleshooting" placeholder="Troubleshooting / Action"></textarea>
+  </div>
+  
+  <button id="btnSimpan" class="btn-simpan" onclick="simpanTiket()">Simpan Tiket</button>
+
+  <h3>Daftar Tiket Kendala</h3>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID Tiket</th><th>Status</th><th>Prioritas</th><th>Tgl Kendala</th>
+          <th>Client</th><th>Provider</th><th>Fitur</th><th>Permasalahan</th><th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabelData"><tr><td colspan="9">⏳ Memuat...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Cek Login Session & Role
+  if (localStorage.getItem("isLoggedIn") !== "true") {
+    window.location.href = "login.html";
+  }
+
+  const currentUser = localStorage.getItem("currentUser");
+  const userRole = localStorage.getItem("userRole"); // 'admin' atau 'user'
+  const SCRIPT_URL = "PASTE_URL_APPS_SCRIPT_BARU_DISINI";
+
+  // Tampilkan Identitas & Role
+  document.getElementById("userInfo").innerText = `👤 ${currentUser} (${userRole.toUpperCase()})`;
+
+  // Tampilkan panel Tambah Akun khusus Admin
+  if (userRole === "admin") {
+    document.getElementById("panelAdmin").style.display = "block";
+  }
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = "login.html";
+  }
+
+  function ambilTiket() {
+    fetch(SCRIPT_URL)
+      .then(res => res.json())
+      .then(data => {
+        let html = "";
+        data.forEach(row => {
+          // Tombol aksi disesuaikan berdasarkan Role
+          let btnEdit = `<button style="background:#ffc107; border:none; padding:4px 8px; border-radius:3px; cursor:pointer;" onclick='editTiket(${JSON.stringify(row)})'>Edit</button>`;
+          let btnDelete = userRole === "admin" 
+            ? `<button style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:3px; cursor:pointer; margin-left:5px;" onclick="hapusTiket('${row["ID Tiket"]}')">Hapus</button>` 
+            : ``;
+
+          html += `<tr>
+            <td>${row["ID Tiket"] || ''}</td>
+            <td><b>${row["Status"] || ''}</b></td>
+            <td>${row["Prioritas"] || ''}</td>
+            <td>${row["Tanggal Kendala"] || ''}</td>
+            <td>${row["Client"] || ''}</td>
+            <td>${row["Provider"] || ''}</td>
+            <td>${row["Fitur"] || ''}</td>
+            <td>${row["Permasalahan"] || ''}</td>
+            <td>${btnEdit} ${btnDelete}</td>
+          </tr>`;
+        });
+        document.getElementById("tabelData").innerHTML = html || "<tr><td colspan='9'>Data Kosong</td></tr>";
+      });
+  }
+
+  function simpanTiket() {
+    const btn = document.getElementById("btnSimpan");
+    btn.innerText = "⏳ Memproses..."; btn.disabled = true;
+
+    const id = document.getElementById("ID_Tiket").value;
+    const payload = {
+      action: id ? "update" : "create",
+      "ID Tiket": id,
+      "Status": document.getElementById("Status").value,
+      "Prioritas": document.getElementById("Prioritas").value,
+      "Tanggal Kendala": document.getElementById("Tgl_Kendala").value,
+      "Jam Kendala": document.getElementById("Jam_Kendala").value,
+      "Client": document.getElementById("Client").value,
+      "Provider": document.getElementById("Provider").value,
+      "Vendor": document.getElementById("Vendor").value,
+      "Fitur": document.getElementById("Fitur").value,
+      "Permasalahan": document.getElementById("Permasalahan").value,
+      "Troubleshooting / Action / Hasil cek": document.getElementById("Troubleshooting").value,
+      "PIC - OPEN": document.getElementById("PIC_OPEN").value,
+      "PIC - CLOSE": document.getElementById("PIC_CLOSE").value
+    };
+
+    fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        location.reload();
+      });
+  }
+
+  function editTiket(row) {
+    document.getElementById("ID_Tiket").value = row["ID Tiket"];
+    document.getElementById("Status").value = row["Status"];
+    document.getElementById("Permasalahan").value = row["Permasalahan"];
+    document.getElementById("Client").value = row["Client"];
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Fungsi Khusus Admin: Hapus Tiket
+  function hapusTiket(id) {
+    if (confirm(`Yakin ingin menghapus tiket ${id}?`)) {
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "delete", "ID Tiket": id })
+      })
+      .then(res => res.json())
+      .then(res => {
+        alert(res.message);
+        ambilTiket();
+      });
+    }
+  }
+
+  // Fungsi Khusus Admin: Buat Akun Baru
+  function tambahUser() {
+    const u = document.getElementById("newUsername").value;
+    const p = document.getElementById("newPassword").value;
+    const r = document.getElementById("newRole").value;
+
+    if (!u || !p) return alert("Isi username dan password baru!");
+
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "addUser", username: u, password: p, role: r })
+    })
+    .then(res => res.json())
+    .then(res => {
+      alert(res.message);
+      document.getElementById("newUsername").value = "";
+      document.getElementById("newPassword").value = "";
+    });
+  }
+
+  ambilTiket();
+</script>
+</body>
+</html>
