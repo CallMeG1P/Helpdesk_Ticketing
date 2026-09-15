@@ -187,24 +187,29 @@
   }
 
   // Fungsi Khusus Admin: Buat Akun Baru
-  function tambahUser() {
-    const u = document.getElementById("newUsername").value;
-    const p = document.getElementById("newPassword").value;
-    const r = document.getElementById("newRole").value;
+function tambahUser() {
+  const u = document.getElementById("newUsername").value.trim();
+  const p = document.getElementById("newPassword").value.trim();
+  const r = document.getElementById("newRole").value;
 
-    if (!u || !p) return alert("Isi username dan password baru!");
+  if (!u || !p) return alert("Isi username dan password baru!");
 
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "addUser", username: u, password: p, role: r })
-    })
-    .then(res => res.json())
-    .then(res => {
-      alert(res.message);
-      document.getElementById("newUsername").value = "";
-      document.getElementById("newPassword").value = "";
-    });
-  }
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" }, // Wajib ada untuk Apps Script
+    body: JSON.stringify({ action: "addUser", username: u, password: p, role: r })
+  })
+  .then(res => res.json())
+  .then(res => {
+    alert(res.message);
+    document.getElementById("newUsername").value = "";
+    document.getElementById("newPassword").value = "";
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Gagal membuat akun!");
+  });
+}
 
   ambilTiket();
 </script>
