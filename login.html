@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - System Support</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; }
+    input, button { width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 4px; box-sizing: border-box; }
+    input { border: 1px solid #ccc; }
+    button { background: #0070f3; color: white; border: none; cursor: pointer; font-weight: bold; }
+    button:disabled { background: #ccc; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2 style="text-align: center;">Support System</h2>
+  <input type="text" id="username" placeholder="Username">
+  <input type="password" id="password" placeholder="Password">
+  <button id="btnLogin" onclick="prosesLogin()">Login</button>
+</div>
+
+<script>
+  const SCRIPT_URL = "PASTE_URL_APPS_SCRIPT_BARU_DISINI";
+
+  if (localStorage.getItem("isLoggedIn") === "true") {
+    window.location.href = "index.html";
+  }
+
+  function prosesLogin() {
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+    const btn = document.getElementById("btnLogin");
+
+    if (!user || !pass) return alert("Masukkan username & password!");
+
+    btn.innerText = "⏳ Verifikasi...";
+    btn.disabled = true;
+
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({ action: "login", username: user, password: pass })
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === "success") {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("currentUser", res.username);
+        localStorage.setItem("userRole", res.role); // 'admin' atau 'user'
+        window.location.href = "index.html";
+      } else {
+        alert(res.message);
+      }
+    })
+    .catch(err => alert("Gagal koneksi ke server!"))
+    .finally(() => {
+      btn.innerText = "Login";
+      btn.disabled = false;
+    });
+  }
+</script>
+</body>
+</html>
